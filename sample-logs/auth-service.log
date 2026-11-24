@@ -1,0 +1,7 @@
+2026-11-24T06:10:00Z INFO auth-service User login attempt username=alice@example.com clientIp=192.168.1.105 requestId=req-2001 traceId=tr-2001
+2026-11-24T06:10:01Z INFO auth-service Password verified successfully user=usr-4412 traceId=tr-2001
+2026-11-24T06:10:02Z INFO auth-service JWT issued expiry=3600s algorithm=RS256 traceId=tr-2001
+2026-11-24T06:15:10Z WARN auth-service Multiple failed login attempts detected username=admin clientIp=203.0.113.45 requestId=req-2002
+2026-11-24T06:15:12Z ERROR auth-service Authentication failure: Invalid credentials username=admin clientIp=203.0.113.45 requestId=req-2002
+2026-11-24T06:15:15Z WARN auth-service IP address temporarily rate-limited ip=203.0.113.45 limit=5/min
+2026-11-24T06:20:00Z INFO auth-service JWKS key rotation scheduled in 12 hours

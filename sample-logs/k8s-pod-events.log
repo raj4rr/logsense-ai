@@ -1,0 +1,6 @@
+2026-11-24T08:30:00Z INFO k8s-node-worker-2 kubelet Container payment-service-7f8d6-xk29 started containerId=c-90182 namespace=prod
+2026-11-24T08:30:05Z INFO k8s-node-worker-2 kubelet Readiness probe succeeded for pod payment-service-7f8d6-xk29
+2026-11-24T08:32:00Z WARN k8s-node-worker-2 kubelet Pod payment-service-7f8d6-xk29 memory usage reached 92% of limit (942Mi/1024Mi)
+2026-11-24T08:32:15Z ERROR k8s-node-worker-2 kernel OOM killer invoked: Killed process 31201 (java) total-vm:2048560kB, anon-rss:985200kB
+2026-11-24T08:32:16Z ERROR k8s-node-worker-2 kubelet Container payment-service-7f8d6-xk29 failed with exitCode 137 (OOMKilled)
+2026-11-24T08:32:20Z WARN k8s-node-worker-2 kubelet Back-off restarting failed container payment-service-7f8d6-xk29 in pod payment-service-7f8d6-xk29_prod

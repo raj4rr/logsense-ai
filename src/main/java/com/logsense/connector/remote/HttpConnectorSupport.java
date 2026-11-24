@@ -1,8 +1,63 @@
 package com.logsense.connector.remote;
-import com.fasterxml.jackson.databind.*; import java.net.*; import java.net.http.*; import java.nio.charset.StandardCharsets; import java.time.Duration; import java.util.*;
-final class HttpConnectorSupport { static final ObjectMapper M=new ObjectMapper().findAndRegisterModules(); private HttpConnectorSupport(){}
- static JsonNode get(String url,Map<String,String> headers){try{HttpRequest.Builder b=HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(25)).GET();headers.forEach(b::header);HttpResponse<String> r=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build().send(b.build(),HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));if(r.statusCode()<200||r.statusCode()>=300)throw new IllegalStateException("Remote log API returned HTTP "+r.statusCode());return M.readTree(r.body());}catch(Exception e){throw new IllegalStateException("Remote log request failed: "+e.getMessage(),e);}}
- static String getText(String url,Map<String,String> headers){try{HttpRequest.Builder b=HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(25)).GET();headers.forEach(b::header);HttpResponse<String> r=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build().send(b.build(),HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));if(r.statusCode()<200||r.statusCode()>=300)throw new IllegalStateException("Remote log API returned HTTP "+r.statusCode());return r.body();}catch(Exception e){throw new IllegalStateException("Remote log request failed: "+e.getMessage(),e);}}
- static String post(String url,String body,Map<String,String> headers){try{HttpRequest.Builder b=HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).header("Content-Type","application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(body,StandardCharsets.UTF_8));headers.forEach(b::header);HttpResponse<String> r=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build().send(b.build(),HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));if(r.statusCode()<200||r.statusCode()>=300)throw new IllegalStateException("Remote log API returned HTTP "+r.statusCode());return r.body();}catch(Exception e){throw new IllegalStateException("Remote log request failed: "+e.getMessage(),e);}}
- static String enc(String s){return URLEncoder.encode(s,StandardCharsets.UTF_8);} static Map<String,String> bearer(String token){return token==null||token.isBlank()?Map.of("Accept","application/json"):Map.of("Accept","application/json","Authorization","Bearer "+token);}
+
+import com.fasterxml.jackson.databind.*;
+
+import java.net.*;
+import java.net.http.*;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.*;
+
+final class HttpConnectorSupport {
+    static final ObjectMapper M = new ObjectMapper().findAndRegisterModules();
+
+    private HttpConnectorSupport() {
+    }
+
+    static JsonNode get(String url, Map<String, String> headers) {
+        try {
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(25)).GET();
+            headers.forEach(b::header);
+            HttpResponse<String> r = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build().send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (r.statusCode() < 200 || r.statusCode() >= 300)
+                throw new IllegalStateException("Remote log API returned HTTP " + r.statusCode());
+            return M.readTree(r.body());
+        } catch (Exception e) {
+            throw new IllegalStateException("Remote log request failed: " + e.getMessage(), e);
+        }
+    }
+
+    static String getText(String url, Map<String, String> headers) {
+        try {
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(25)).GET();
+            headers.forEach(b::header);
+            HttpResponse<String> r = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build().send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (r.statusCode() < 200 || r.statusCode() >= 300)
+                throw new IllegalStateException("Remote log API returned HTTP " + r.statusCode());
+            return r.body();
+        } catch (Exception e) {
+            throw new IllegalStateException("Remote log request failed: " + e.getMessage(), e);
+        }
+    }
+
+    static String post(String url, String body, Map<String, String> headers) {
+        try {
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
+            headers.forEach(b::header);
+            HttpResponse<String> r = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build().send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (r.statusCode() < 200 || r.statusCode() >= 300)
+                throw new IllegalStateException("Remote log API returned HTTP " + r.statusCode());
+            return r.body();
+        } catch (Exception e) {
+            throw new IllegalStateException("Remote log request failed: " + e.getMessage(), e);
+        }
+    }
+
+    static String enc(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8);
+    }
+
+    static Map<String, String> bearer(String token) {
+        return token == null || token.isBlank() ? Map.of("Accept", "application/json") : Map.of("Accept", "application/json", "Authorization", "Bearer " + token);
+    }
 }

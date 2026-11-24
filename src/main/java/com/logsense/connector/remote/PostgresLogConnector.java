@@ -1,8 +1,71 @@
 package com.logsense.connector.remote;
-import com.logsense.config.LogSenseProperties;import com.logsense.connector.*;import com.logsense.connector.file.LocalFileConnector;import com.logsense.model.*;import org.springframework.stereotype.Component;import org.springframework.jdbc.datasource.DriverManagerDataSource;import java.time.*;import java.util.*;import java.sql.*;
-@Component public class PostgresLogConnector implements LogConnector {
- private final LogSenseProperties p; public PostgresLogConnector(LogSenseProperties p){this.p=p;}
- public String type(){return "POSTGRESQL";} public boolean supports(String t){return "POSTGRESQL".equalsIgnoreCase(t);}
- public List<LogEvent> search(String source,LogQuery q){var c=p.sources().postgres();if(c==null||c.url()==null||c.url().isBlank())throw new IllegalStateException("Configure SOURCE_POSTGRES_URL, SOURCE_POSTGRES_USER and SOURCE_POSTGRES_PASSWORD");String table=c.table()==null||c.table().isBlank()?"logsense_log_events":c.table();if(source!=null&&!source.isBlank()&&!source.equals(table))throw new SecurityException("PostgreSQL source must match the configured read-only table");if(!table.matches("[a-zA-Z_][a-zA-Z0-9_]*"))throw new SecurityException("Unsafe PostgreSQL table identifier");DriverManagerDataSource ds=new DriverManagerDataSource(c.url(),c.username(),c.password());ds.setDriverClassName("org.postgresql.Driver");String sql="select occurred_at,severity,message,service_name,trace_id,request_id,host from "+table+" where (?::timestamptz is null or occurred_at >= ?::timestamptz) and (?::timestamptz is null or occurred_at <= ?::timestamptz) order by occurred_at desc limit ?";List<LogEvent> out=new ArrayList<>();try(Connection connection=ds.getConnection()){connection.setReadOnly(true);connection.setAutoCommit(false);try(PreparedStatement ps=connection.prepareStatement(sql)){ps.setQueryTimeout(10);setInstant(ps,1,q.from());setInstant(ps,2,q.from());setInstant(ps,3,q.to());setInstant(ps,4,q.to());ps.setInt(5,q.safeLimit());try(ResultSet rs=ps.executeQuery()){while(rs.next()){Instant ts=rs.getTimestamp(1).toInstant();LogEvent e=new LogEvent("postgresql",rs.getString(4),null,rs.getString(2),ts,rs.getString(3),null,rs.getString(5),null,rs.getString(6),rs.getString(7),Map.of());if(LocalFileConnector.matches(e,q))out.add(e);}}connection.rollback();}}catch(Exception e){throw new IllegalStateException("PostgreSQL log query failed; verify the read-only account and configured view",e);}return out;}
- private static void setInstant(PreparedStatement ps,int index,Instant value)throws SQLException{if(value==null)ps.setNull(index,Types.TIMESTAMP_WITH_TIMEZONE);else ps.setTimestamp(index,Timestamp.from(value));}
+
+import com.logsense.config.LogSenseProperties;
+import com.logsense.connector.*;
+import com.logsense.connector.file.LocalFileConnector;
+import com.logsense.model.*;
+import org.springframework.stereotype.Component;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import java.time.*;
+import java.util.*;
+import java.sql.*;
+
+@Component
+public class PostgresLogConnector implements LogConnector {
+    private final LogSenseProperties p;
+
+    public PostgresLogConnector(LogSenseProperties p) {
+        this.p = p;
+    }
+
+    public String type() {
+        return "POSTGRESQL";
+    }
+
+    public boolean supports(String t) {
+        return "POSTGRESQL".equalsIgnoreCase(t);
+    }
+
+    public List<LogEvent> search(String source, LogQuery q) {
+        var c = p.sources().postgres();
+        if (c == null || c.url() == null || c.url().isBlank())
+            throw new IllegalStateException("Configure SOURCE_POSTGRES_URL, SOURCE_POSTGRES_USER and SOURCE_POSTGRES_PASSWORD");
+        String table = c.table() == null || c.table().isBlank() ? "logsense_log_events" : c.table();
+        if (source != null && !source.isBlank() && !source.equals(table))
+            throw new SecurityException("PostgreSQL source must match the configured read-only table");
+        if (!table.matches("[a-zA-Z_][a-zA-Z0-9_]*")) throw new SecurityException("Unsafe PostgreSQL table identifier");
+        DriverManagerDataSource ds = new DriverManagerDataSource(c.url(), c.username(), c.password());
+        ds.setDriverClassName("org.postgresql.Driver");
+        String sql = "select occurred_at,severity,message,service_name,trace_id,request_id,host from " + table + " where (?::timestamptz is null or occurred_at >= ?::timestamptz) and (?::timestamptz is null or occurred_at <= ?::timestamptz) order by occurred_at desc limit ?";
+        List<LogEvent> out = new ArrayList<>();
+        try (Connection connection = ds.getConnection()) {
+            connection.setReadOnly(true);
+            connection.setAutoCommit(false);
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setQueryTimeout(10);
+                setInstant(ps, 1, q.from());
+                setInstant(ps, 2, q.from());
+                setInstant(ps, 3, q.to());
+                setInstant(ps, 4, q.to());
+                ps.setInt(5, q.safeLimit());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Instant ts = rs.getTimestamp(1).toInstant();
+                        LogEvent e = new LogEvent("postgresql", rs.getString(4), null, rs.getString(2), ts, rs.getString(3), null, rs.getString(5), null, rs.getString(6), rs.getString(7), Map.of());
+                        if (LocalFileConnector.matches(e, q)) out.add(e);
+                    }
+                }
+                connection.rollback();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("PostgreSQL log query failed; verify the read-only account and configured view", e);
+        }
+        return out;
+    }
+
+    private static void setInstant(PreparedStatement ps, int index, Instant value) throws SQLException {
+        if (value == null) ps.setNull(index, Types.TIMESTAMP_WITH_TIMEZONE);
+        else ps.setTimestamp(index, Timestamp.from(value));
+    }
 }

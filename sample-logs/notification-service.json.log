@@ -1,0 +1,6 @@
+{"@timestamp":"2026-11-24T08:15:00Z","level":"INFO","service":{"name":"notification-service"},"message":"Kafka consumer group rebalance finished partitions=8 topic=order-events"}
+{"@timestamp":"2026-11-24T08:15:05Z","level":"INFO","service":{"name":"notification-service"},"message":"Dispatching SMS notification recipient=+1555019283 requestId=req-6001 traceId=tr-6001"}
+{"@timestamp":"2026-11-24T08:15:10Z","level":"WARN","service":{"name":"notification-service"},"message":"Twilio SMS API rate limit quota near threshold 92% traceId=tr-6001"}
+{"@timestamp":"2026-11-24T08:15:15Z","level":"ERROR","service":{"name":"notification-service"},"message":"TwilioApiException: 429 Too Many Requests - Daily message quota exceeded traceId=tr-6001"}
+{"@timestamp":"2026-11-24T08:15:16Z","level":"ERROR","service":{"name":"notification-service"},"message":"Fallback email notification delivery failed: SMTP connection refused host=smtp.mailgun.org:587 traceId=tr-6001"}
+{"@timestamp":"2026-11-24T08:16:00Z","level":"INFO","service":{"name":"notification-service"},"message":"Circuit breaker opened for provider=Twilio duration=60000ms"}

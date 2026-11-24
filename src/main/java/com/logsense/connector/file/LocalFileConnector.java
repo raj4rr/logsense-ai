@@ -1,10 +1,66 @@
 package com.logsense.connector.file;
-import com.logsense.config.LogSenseProperties; import com.logsense.connector.*; import com.logsense.model.*; import org.springframework.stereotype.Component;
-import java.io.*; import java.nio.file.*; import java.time.*; import java.util.*; import java.util.stream.*;
-@Component public class LocalFileConnector implements LogConnector {
- private final List<Path> roots; public LocalFileConnector(LogSenseProperties p){this.roots=(p.files()==null||p.files().allowedRoots()==null?List.of("./sample-logs"):p.files().allowedRoots()).stream().map(x->Path.of(x).toAbsolutePath().normalize()).toList();}
- public String type(){return "FILE";} public boolean supports(String t){return "FILE".equalsIgnoreCase(t)||"LOCAL_FILE".equalsIgnoreCase(t);}
- public List<LogEvent> search(String source,LogQuery q){Path requested=Path.of(source).toAbsolutePath().normalize(); Path file; try { file=requested.toRealPath(); } catch(IOException ex) { throw new IllegalArgumentException("Log file not found or unreadable",ex); } boolean allowed=roots.stream().anyMatch(root->{try{return file.startsWith(root.toRealPath());}catch(IOException ex){return false;}}); if(!allowed)throw new SecurityException("Requested file is outside configured allowed roots"); if(!Files.isRegularFile(file)||!Files.isReadable(file))throw new IllegalArgumentException("Log file not found or unreadable");
-  Deque<LogEvent> buffer=new ArrayDeque<>(); try(Stream<String> lines=Files.lines(file)){lines.forEach(line->{LogEvent e=LogEventMapper.fromText(source,line,Instant.now(),Map.of("path",file.toString())); if(matches(e,q)){if(buffer.size()>=q.safeLimit())buffer.removeFirst();buffer.addLast(e);}});}catch(IOException e){throw new IllegalStateException("Unable to read log file",e);} return buffer.stream().sorted(Comparator.comparing(LogEvent::timestamp).reversed()).toList(); }
- public static boolean matches(LogEvent e,LogQuery q){return (q.keyword()==null||e.message().toLowerCase(Locale.ROOT).contains(q.keyword().toLowerCase(Locale.ROOT)))&&(q.severity()==null||q.severity().equalsIgnoreCase(e.severity()))&&(q.service()==null||q.service().equalsIgnoreCase(e.service()))&&(q.traceId()==null||q.traceId().equals(e.traceId()))&&(q.from()==null||!e.timestamp().isBefore(q.from()))&&(q.to()==null||!e.timestamp().isAfter(q.to()));}
+
+import com.logsense.config.LogSenseProperties;
+import com.logsense.connector.*;
+import com.logsense.model.*;
+import org.springframework.stereotype.Component;
+
+import java.io.*;
+import java.nio.file.*;
+import java.time.*;
+import java.util.*;
+import java.util.stream.*;
+
+@Component
+public class LocalFileConnector implements LogConnector {
+    private final List<Path> roots;
+
+    public LocalFileConnector(LogSenseProperties p) {
+        this.roots = (p.files() == null || p.files().allowedRoots() == null ? List.of("./sample-logs") : p.files().allowedRoots()).stream().map(x -> Path.of(x).toAbsolutePath().normalize()).toList();
+    }
+
+    public String type() {
+        return "FILE";
+    }
+
+    public boolean supports(String t) {
+        return "FILE".equalsIgnoreCase(t) || "LOCAL_FILE".equalsIgnoreCase(t);
+    }
+
+    public List<LogEvent> search(String source, LogQuery q) {
+        Path requested = Path.of(source).toAbsolutePath().normalize();
+        Path file;
+        try {
+            file = requested.toRealPath();
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Log file not found or unreadable", ex);
+        }
+        boolean allowed = roots.stream().anyMatch(root -> {
+            try {
+                return file.startsWith(root.toRealPath());
+            } catch (IOException ex) {
+                return false;
+            }
+        });
+        if (!allowed) throw new SecurityException("Requested file is outside configured allowed roots");
+        if (!Files.isRegularFile(file) || !Files.isReadable(file))
+            throw new IllegalArgumentException("Log file not found or unreadable");
+        Deque<LogEvent> buffer = new ArrayDeque<>();
+        try (Stream<String> lines = Files.lines(file)) {
+            lines.forEach(line -> {
+                LogEvent e = LogEventMapper.fromText(source, line, Instant.now(), Map.of("path", file.toString()));
+                if (matches(e, q)) {
+                    if (buffer.size() >= q.safeLimit()) buffer.removeFirst();
+                    buffer.addLast(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to read log file", e);
+        }
+        return buffer.stream().sorted(Comparator.comparing(LogEvent::timestamp).reversed()).toList();
+    }
+
+    public static boolean matches(LogEvent e, LogQuery q) {
+        return (q.keyword() == null || e.message().toLowerCase(Locale.ROOT).contains(q.keyword().toLowerCase(Locale.ROOT))) && (q.severity() == null || q.severity().equalsIgnoreCase(e.severity())) && (q.service() == null || q.service().equalsIgnoreCase(e.service())) && (q.traceId() == null || q.traceId().equals(e.traceId())) && (q.from() == null || !e.timestamp().isBefore(q.from())) && (q.to() == null || !e.timestamp().isAfter(q.to()));
+    }
 }

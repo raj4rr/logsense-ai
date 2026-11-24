@@ -1,0 +1,7 @@
+2026-11-24T07:00:01Z INFO order-service Checkout started cartId=cart-8821 userId=usr-9812 requestId=req-3001 traceId=tr-3001
+2026-11-24T07:00:02Z INFO inventory-service Stock reservation confirmed sku=ITEM-442 qty=2 requestId=req-3001 traceId=tr-3001
+2026-11-24T07:00:05Z WARN order-service Payment gateway call took longer than expected durationMs=4200 traceId=tr-3001
+2026-11-24T07:00:08Z ERROR order-service Order creation failed: Downstream payment provider timed out orderId=ord-5591 traceId=tr-3001
+2026-11-24T07:00:09Z INFO inventory-service Stock reservation released sku=ITEM-442 qty=2 traceId=tr-3001
+2026-11-24T07:00:10Z ERROR order-service org.springframework.web.client.ResourceAccessException: I/O error on POST request to payment-gateway: Read timed out traceId=tr-3001
+2026-11-24T07:01:00Z INFO order-service Order processing queue size=4 activeWorkers=8

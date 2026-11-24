@@ -1,0 +1,6 @@
+2026-11-24T08:00:01Z INFO database-cluster Checkpoint starting: time 300s, flag 0x0002
+2026-11-24T08:00:15Z INFO database-cluster Checkpoint complete: wrote 8420 buffers (5.1%); 0 WAL file(s) added, 0 removed
+2026-11-24T08:05:00Z WARN database-cluster High lock wait detected: process 4812 waiting for ExclusiveLock on relation accounts
+2026-11-24T08:05:30Z ERROR database-cluster Canceling statement due to statement_timeout query="UPDATE accounts SET balance = balance - 100 WHERE id = 42" traceId=tr-5001
+2026-11-24T08:05:31Z ERROR database-cluster Deadlock detected between process 4812 and process 4920 traceId=tr-5001
+2026-11-24T08:06:00Z INFO database-cluster Autovacuum worker 7102 completed on table log_event: 12000 dead tuples removed

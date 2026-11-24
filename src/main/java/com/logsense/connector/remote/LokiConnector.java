@@ -1,3 +1,53 @@
 package com.logsense.connector.remote;
-import com.logsense.config.LogSenseProperties;import com.logsense.connector.*;import com.logsense.connector.file.LocalFileConnector;import com.logsense.model.*;import org.springframework.stereotype.Component;import com.fasterxml.jackson.databind.*;import java.time.*;import java.util.*;
-@Component public class LokiConnector implements LogConnector{private final LogSenseProperties p;public LokiConnector(LogSenseProperties p){this.p=p;}public String type(){return "LOKI";}public boolean supports(String t){return "LOKI".equalsIgnoreCase(t);}public List<LogEvent> search(String selector,LogQuery q){var c=p.sources().loki();if(c==null||c.url()==null||c.url().isBlank())throw new IllegalStateException("Set LOKI_URL");String expr=selector==null||selector.isBlank()?"{job=~\".+\"}":selector;if(expr.length()>1000||!expr.startsWith("{")||!expr.contains("}"))throw new SecurityException("Loki selector must be a bounded LogQL stream selector");if(q.keyword()!=null)expr+=" |= \""+q.keyword().replace("\\"," ").replace("\""," ")+"\"";if(q.severity()!=null)expr+=" |= \""+q.severity().replaceAll("[^A-Za-z]","")+"\"";long end=(q.to()==null?Instant.now():q.to()).toEpochMilli()*1_000_000L;long start=(q.from()==null?Instant.now().minus(Duration.ofHours(1)):q.from()).toEpochMilli()*1_000_000L;String url=c.url().replaceAll("/$","")+"/loki/api/v1/query_range?query="+HttpConnectorSupport.enc(expr)+"&start="+start+"&end="+end+"&limit="+q.safeLimit()+"&direction=BACKWARD";JsonNode root=HttpConnectorSupport.get(url,HttpConnectorSupport.bearer(c.token()));List<LogEvent> out=new ArrayList<>();for(JsonNode stream:root.path("data").path("result")){Map<String,Object> labels=new HashMap<>();stream.path("stream").fields().forEachRemaining(e->labels.put(e.getKey(),e.getValue().asText()));for(JsonNode v:stream.path("values")){Instant ts=Instant.ofEpochSecond(Long.parseLong(v.get(0).asText())/1_000_000_000L);LogEvent e=LogEventMapper.fromText("loki",v.get(1).asText(),ts,labels);if(LocalFileConnector.matches(e,q))out.add(e);}}return out;}}
+
+import com.logsense.config.LogSenseProperties;
+import com.logsense.connector.*;
+import com.logsense.connector.file.LocalFileConnector;
+import com.logsense.model.*;
+import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.*;
+
+import java.time.*;
+import java.util.*;
+
+@Component
+public class LokiConnector implements LogConnector {
+    private final LogSenseProperties p;
+
+    public LokiConnector(LogSenseProperties p) {
+        this.p = p;
+    }
+
+    public String type() {
+        return "LOKI";
+    }
+
+    public boolean supports(String t) {
+        return "LOKI".equalsIgnoreCase(t);
+    }
+
+    public List<LogEvent> search(String selector, LogQuery q) {
+        var c = p.sources().loki();
+        if (c == null || c.url() == null || c.url().isBlank()) throw new IllegalStateException("Set LOKI_URL");
+        String expr = selector == null || selector.isBlank() ? "{job=~\".+\"}" : selector;
+        if (expr.length() > 1000 || !expr.startsWith("{") || !expr.contains("}"))
+            throw new SecurityException("Loki selector must be a bounded LogQL stream selector");
+        if (q.keyword() != null) expr += " |= \"" + q.keyword().replace("\\", " ").replace("\"", " ") + "\"";
+        if (q.severity() != null) expr += " |= \"" + q.severity().replaceAll("[^A-Za-z]", "") + "\"";
+        long end = (q.to() == null ? Instant.now() : q.to()).toEpochMilli() * 1_000_000L;
+        long start = (q.from() == null ? Instant.now().minus(Duration.ofHours(1)) : q.from()).toEpochMilli() * 1_000_000L;
+        String url = c.url().replaceAll("/$", "") + "/loki/api/v1/query_range?query=" + HttpConnectorSupport.enc(expr) + "&start=" + start + "&end=" + end + "&limit=" + q.safeLimit() + "&direction=BACKWARD";
+        JsonNode root = HttpConnectorSupport.get(url, HttpConnectorSupport.bearer(c.token()));
+        List<LogEvent> out = new ArrayList<>();
+        for (JsonNode stream : root.path("data").path("result")) {
+            Map<String, Object> labels = new HashMap<>();
+            stream.path("stream").fields().forEachRemaining(e -> labels.put(e.getKey(), e.getValue().asText()));
+            for (JsonNode v : stream.path("values")) {
+                Instant ts = Instant.ofEpochSecond(Long.parseLong(v.get(0).asText()) / 1_000_000_000L);
+                LogEvent e = LogEventMapper.fromText("loki", v.get(1).asText(), ts, labels);
+                if (LocalFileConnector.matches(e, q)) out.add(e);
+            }
+        }
+        return out;
+    }
+}

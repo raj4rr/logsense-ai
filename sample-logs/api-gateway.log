@@ -1,0 +1,6 @@
+2026-11-24T07:30:00Z INFO api-gateway Route matched path=/api/v1/orders method=POST downstream=http://order-service:8080 requestId=req-4001 traceId=tr-4001
+2026-11-24T07:30:01Z INFO api-gateway Forwarded request to order-service requestId=req-4001 traceId=tr-4001
+2026-11-24T07:30:04Z WARN api-gateway Slow response from upstream took 3100ms path=/api/v1/orders requestId=req-4001 traceId=tr-4001
+2026-11-24T07:30:05Z ERROR api-gateway Upstream 504 Gateway Timeout uri=http://order-service:8080/api/v1/orders requestId=req-4001 traceId=tr-4001
+2026-11-24T07:31:00Z WARN api-gateway Rate limit threshold reached for clientIp=198.51.100.22 status=429
+2026-11-24T07:32:00Z INFO api-gateway Active connections=1420 requestRate=340rps
