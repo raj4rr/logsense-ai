@@ -1,17 +1,11 @@
 # REST API
 
-All endpoints except `/actuator/health/**` require `X-API-Key: <key>` (or `Authorization: Bearer <key>` in this development build).
+All `/api/v1/**` routes require `X-API-Key: <key>` unless JWT resource-server mode is configured.
 
-## GET /api/v1/sources
-Returns connector type names and the currently active starter connectors.
+* `GET /api/v1/sources` – connector types registered in the runtime.
+* `GET /api/v1/logs?type=FILE&source=/var/log/logsense/payment-service.log&severity=ERROR&limit=100` – bounded read.
+* `POST /api/v1/analyze` – JSON body: `{"type":"FILE","source":"/var/log/logsense/payment-service.log","question":"Why are payments failing?","limit":100}`.
 
-## GET /api/v1/logs
-Parameters: `type` (required), `source` (required), `keyword`, `severity`, `service`, `traceId`, `limit` (1-500).
+Optional query fields: `keyword`, `severity`, `service`, `traceId`, `from`, `to`, `limit`. Date/time values are ISO-8601 instants. Limit is 1–500.
 
-Example: `curl -H 'X-API-Key: change-me-local' 'http://localhost:8080/api/v1/logs?type=FILE&source=%2Fvar%2Flog%2Flogsense%2Fpayment-service.log&severity=ERROR'`
-
-## POST /api/v1/analyze
-JSON body: `{"type":"FILE","source":"/var/log/logsense/payment-service.log","severity":"ERROR","limit":100,"question":"What is the likely root cause?"}`.
-
-## MCP
-Spring AI Streamable HTTP MCP endpoint is served by the MCP starter (default endpoint path `/mcp`). Tools: `list_log_sources`, `search_logs`, `analyze_logs`.
+MCP tools: `list_log_sources`, `search_logs`, `get_error_logs`, `analyze_logs`, `find_root_cause`, `correlate_logs`, `find_trace_logs`, `detect_anomalies`, `analyze_performance`, `get_service_health`, `suggest_fixes`, and `generate_incident_report`. MCP server uses Streamable HTTP; verify your MCP client transport configuration and base path against the Spring AI MCP server version selected in `pom.xml`.

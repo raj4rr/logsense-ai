@@ -6,14 +6,41 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       DB_URL: jdbc:postgresql://postgres:5432/logsense
       DB_USER: logsense
-      DB_PASSWORD: ${DB_PASSWORD:-logsense_dev}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       REDIS_HOST: redis
-      LOGSENSE_API_KEY: ${LOGSENSE_API_KEY:-change-me-local}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      LOGSENSE_API_KEY: ${LOGSENSE_API_KEY:?Set LOGSENSE_API_KEY in .env}
       AI_PROVIDER: ${AI_PROVIDER:-ollama}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:8b}
       LOGSENSE_ALLOWED_ROOTS: /var/log/logsense
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-}
+      ELASTICSEARCH_TOKEN: ${ELASTICSEARCH_TOKEN:-}
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
+      LOKI_URL: ${LOKI_URL:-}
+      LOKI_TOKEN: ${LOKI_TOKEN:-}
+      SPLUNK_URL: ${SPLUNK_URL:-}
+      SPLUNK_TOKEN: ${SPLUNK_TOKEN:-}
+      SPLUNK_INDEX: ${SPLUNK_INDEX:-main}
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-}
+      KAFKA_SECURITY_PROTOCOL: ${KAFKA_SECURITY_PROTOCOL:-}
+      KAFKA_SASL_MECHANISM: ${KAFKA_SASL_MECHANISM:-}
+      KAFKA_SASL_JAAS_CONFIG: ${KAFKA_SASL_JAAS_CONFIG:-}
+      KUBERNETES_ENABLED: ${KUBERNETES_ENABLED:-false}
+      KUBERNETES_API_URL: ${KUBERNETES_API_URL:-}
+      KUBERNETES_TOKEN: ${KUBERNETES_TOKEN:-}
+      KUBERNETES_NAMESPACE: ${KUBERNETES_NAMESPACE:-default}
+      SOURCE_POSTGRES_TABLE: ${SOURCE_POSTGRES_TABLE:-logsense_log_events}
+      SOURCE_POSTGRES_URL: ${SOURCE_POSTGRES_URL:-}
+      SOURCE_POSTGRES_USER: ${SOURCE_POSTGRES_USER:-}
+      SOURCE_POSTGRES_PASSWORD: ${SOURCE_POSTGRES_PASSWORD:-}
+      DOCKER_ENABLED: ${DOCKER_ENABLED:-false}
+      DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - ./sample-logs:/var/log/logsense:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -22,21 +49,27 @@ services:
       redis: {condition: service_healthy}
     read_only: true
     tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
   postgres:
     image: postgres:17-alpine
-    environment: {POSTGRES_DB: logsense, POSTGRES_USER: logsense, POSTGRES_PASSWORD: ${DB_PASSWORD:-logsense_dev}}
-    ports: ["5432:5432"]
+    environment:
+      POSTGRES_DB: logsense
+      POSTGRES_USER: logsense
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports: ["127.0.0.1:5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck: {test: ["CMD-SHELL", "pg_isready -U logsense -d logsense"], interval: 5s, timeout: 3s, retries: 20}
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    ports: ["6379:6379"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"]
+    ports: ["127.0.0.1:6379:6379"]
     volumes: ["redisdata:/data"]
-    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 5s, timeout: 3s, retries: 20}
+    healthcheck: {test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"], interval: 5s, timeout: 3s, retries: 20}
   ollama:
     image: ollama/ollama:latest
     profiles: ["local-ai"]
-    ports: ["11434:11434"]
+    ports: ["127.0.0.1:11434:11434"]
     volumes: ["ollamadata:/root/.ollama"]
 volumes: {pgdata: {}, redisdata: {}, ollamadata: {}}

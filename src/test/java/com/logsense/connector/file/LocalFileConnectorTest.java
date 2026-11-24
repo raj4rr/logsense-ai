@@ -1,16 +1,4 @@
 package com.logsense.connector.file;
-
-import com.logsense.config.LogSenseProperties;
-import com.logsense.model.LogQuery;
-import org.junit.jupiter.api.Test;
-import java.nio.file.*;
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
-
-class LocalFileConnectorTest {
- @Test void rejectsPathOutsideAllowedRoot() {
-   var p = new LogSenseProperties("ollama", new LogSenseProperties.Security("x",false), new LogSenseProperties.Files(List.of("./sample-logs")), new LogSenseProperties.Limits(500,168));
-   var connector = new LocalFileConnector(p);
-   assertThrows(SecurityException.class, () -> connector.search("/etc/passwd", new LogQuery("/etc/passwd",null,null,null,null,null,null,10)));
- }
-}
+import com.logsense.config.LogSenseProperties;import com.logsense.model.LogQuery;import org.junit.jupiter.api.Test;import java.nio.file.*;import java.time.Instant;import java.util.List;import static org.junit.jupiter.api.Assertions.*;
+class LocalFileConnectorTest {@Test void readsOnlyFilesWithinConfiguredRoot()throws Exception{Path root=Files.createTempDirectory("logsense");Path f=root.resolve("app.log");Files.writeString(f,"2026-11-24T09:00:00Z ERROR database timeout\n2026-11-24T09:01:00Z INFO started\n");var props=new LogSenseProperties("ollama",null,new LogSenseProperties.Files(List.of(root.toString())),new LogSenseProperties.Limits(500,168),null);var c=new LocalFileConnector(props);var result=c.search(f.toString(),new LogQuery(f.toString(),null,"ERROR",null,null,null,null,50));assertEquals(1,result.size());assertEquals("ERROR",result.getFirst().severity());}
+ @Test void rejectsPathTraversal()throws Exception{Path root=Files.createTempDirectory("allowed");Path other=Files.createTempFile("outside",".log");var props=new LogSenseProperties("ollama",null,new LogSenseProperties.Files(List.of(root.toString())),null,null);var c=new LocalFileConnector(props);assertThrows(SecurityException.class,()->c.search(other.toString(),new LogQuery(other.toString(),null,null,null,null,null,null,10)));}}

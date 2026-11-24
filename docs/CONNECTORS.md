@@ -1,26 +1,17 @@
-# Connector implementation matrix
+# Connector configuration and operational notes
 
-All connector implementations must implement `LogConnector` and return normalized `LogEvent` records. Each must have a source registry record with type, enabled flag, tenant, credential reference (never raw secret in JSON), and an allowlisted endpoint/resource identifier.
+All connectors implement `LogConnector` and return the same normalized `LogEvent` structure. All access is intended to be read-only. Configure endpoints and credentials through environment variables/secrets; never commit credentials.
 
-| Connector | Implementation approach | Required configuration / safety |
-|---|---|---|
-| Local files | Implemented: UTF-8 line reader | Canonical path must remain under `logsense.files.allowed-roots`; read-only mount; bounded results |
-| Docker | Docker Engine API or docker-java | Socket/API read-only; container ID allowlist; tail/time caps; never exec |
-| Kubernetes | Kubernetes Java client / API logs endpoint | ServiceAccount limited to `get/list` pods and `get` pods/log in named namespaces; no exec/delete |
-| Elasticsearch / OpenSearch | Java API client or signed REST query | Read-only role; index allowlist; query DSL generated server-side; timeout and max hits |
-| AWS CloudWatch | AWS SDK v2 `CloudWatchLogsClient` | IAM role with `logs:DescribeLogGroups`, `logs:DescribeLogStreams`, `logs:FilterLogEvents`; restrict log groups |
-| Grafana Loki | HTTP `/loki/api/v1/query_range` | Read-only token; fixed tenant; cap `limit`, time range and query length |
-| Splunk | Search Jobs REST API | Read-only role; allowlisted indexes; enforce earliest/latest time and job TTL |
-| PostgreSQL | Separate read-only DataSource | Dedicated DB role with SELECT on approved log tables/views; statement timeout; no arbitrary SQL input |
-| Kafka | KafkaConsumer with dedicated group and bounded poll | Read-only ACL; allowlisted topics; do not commit offsets unless explicitly designed; cap records/time |
+| Type | Source argument | Required configuration | Notes |
+|---|---|---|---|
+| FILE | absolute file path | `LOGSENSE_ALLOWED_ROOTS` | Path must remain under an allowed root. Mount logs read-only. |
+| DOCKER | container ID/name | `DOCKER_ENABLED=true`, `DOCKER_HOST` | Docker socket access is effectively host-root access; use only on trusted hosts. |
+| KUBERNETES | namespace | `KUBERNETES_ENABLED=true`, `KUBERNETES_API_URL`, `KUBERNETES_TOKEN`, namespace | Token needs only `get/list pods` and `get pods/log` in selected namespace. |
+| ELASTICSEARCH / OPENSEARCH | index/alias | `ELASTICSEARCH_URL`, optional bearer token | Uses `_search`; grant index read-only privilege. |
+| CLOUDWATCH | log group name | `AWS_REGION` and AWS default credential chain | Grant only `logs:FilterLogEvents` on selected log groups. |
+| LOKI | LogQL selector | `LOKI_URL`, optional token | Example selector `{app="payments"}`. |
+| SPLUNK | index name | `SPLUNK_URL`, `SPLUNK_TOKEN`, `SPLUNK_INDEX` | Token should have search capability only. The adapter constructs a restricted index search and expects JSON export response; verify against your Splunk version. |
+| POSTGRESQL | configured table name | `SOURCE_POSTGRES_URL/USER/PASSWORD/TABLE` | Read-only account and table allowlist; schema expected: occurred_at, severity, message, service_name, trace_id, request_id, host. |
+| KAFKA | topic | `KAFKA_BOOTSTRAP_SERVERS` | Consumer is read-only and does not commit offsets. The MVP samples bounded recent topic data; use a dedicated ACL-limited principal. |
 
-## Connector completion checklist
-
-1. Add connector-specific configuration properties and secret references.
-2. Validate endpoint host against an administrator-managed allowlist to prevent SSRF.
-3. Add bounded timeouts, retries with jitter, pagination and cancellation.
-4. Normalize timestamps to UTC and severity to TRACE/DEBUG/INFO/WARN/ERROR/FATAL.
-5. Preserve trace_id, span_id, request_id, service, environment, host and source metadata.
-6. Redact secrets/PII before persistence, caching, or LLM submission.
-7. Add unit tests with mocked clients and integration tests against Testcontainers or local service containers.
-8. Emit audit events for every source query, including actor, tenant, source, filters, result count and outcome.
+Remote connectors require live infrastructure, valid endpoint versions and credentials for integration verification. CloudWatch uses the AWS SDK default credential chain. For Kubernetes, configure TLS trust properly; do not disable certificate validation in production.
