@@ -1,11 +1,9 @@
 package com.logsense.security;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnMissingBean(SecureMcpAuthorizationPort.class)
 public class DefaultRoleAuthorizationAdapter implements SecureMcpAuthorizationPort {
     @Override public boolean canRead(Authentication auth, String tenantId, String connectorType, String source) {
         if (auth == null || !auth.isAuthenticated()) return false;
