@@ -5,9 +5,12 @@ spring:
   application:
     name: logsense-ai
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/logsense}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/logsense?loginTimeout=2&connectTimeout=2&socketTimeout=3}
     username: ${DB_USER:logsense}
     password: ${DB_PASSWORD:logsense_dev}
+    hikari:
+      connection-timeout: 2000
+      initialization-fail-timeout: -1
   jdbc:
     template:
       query-timeout: 10
@@ -18,6 +21,9 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+      timeout: 1000ms
+      lettuce:
+        shutdown-timeout: 100ms
   ai:
     model:
       chat: ${AI_PROVIDER:ollama}

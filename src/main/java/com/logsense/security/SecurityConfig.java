@@ -4,7 +4,7 @@ import com.logsense.config.LogSenseProperties;import org.springframework.context
  @Bean SecurityFilterChain securityFilterChain(HttpSecurity http,ApiKeyFilter apiKeyFilter,LogSenseProperties p)throws Exception{
   http.csrf(c->c.disable())
       .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authorizeHttpRequests(a->a.requestMatchers("/actuator/health/**","/error","/","/index.html","/static/**","/api/v1/chat/**").permitAll().anyRequest().authenticated())
+      .authorizeHttpRequests(a->a.requestMatchers("/actuator/health/**","/error","/","/index.html","/static/**","/api/v1/chat/**","/mcp/**").permitAll().anyRequest().authenticated())
       .addFilterBefore(apiKeyFilter,UsernamePasswordAuthenticationFilter.class);
   if(p.security()!=null&&p.security().issuerUri()!=null&&!p.security().issuerUri().isBlank())
       http.oauth2ResourceServer(o->o.jwt(j->j.decoder(JwtDecoders.fromIssuerLocation(p.security().issuerUri()))));
