@@ -1,0 +1,5 @@
+2026-11-24T05:30:01Z INFO payment-service request accepted requestId=req-1001 traceId=tr-1001
+2026-11-24T05:30:02Z WARN payment-service downstream latency high traceId=tr-1001 durationMs=1800
+2026-11-24T05:30:03Z ERROR payment-service java.sql.SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 30000ms traceId=tr-1001
+2026-11-24T05:30:04Z ERROR order-service payment authorization failed traceId=tr-1001
+2026-11-24T05:31:10Z INFO payment-service health check completed status=UP

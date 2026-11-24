@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    ports: ["8080:8080"]
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/logsense
+      DB_USER: logsense
+      DB_PASSWORD: ${DB_PASSWORD:-logsense_dev}
+      REDIS_HOST: redis
+      LOGSENSE_API_KEY: ${LOGSENSE_API_KEY:-change-me-local}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:8b}
+      LOGSENSE_ALLOWED_ROOTS: /var/log/logsense
+    volumes:
+      - ./sample-logs:/var/log/logsense:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp]
+  postgres:
+    image: postgres:17-alpine
+    environment: {POSTGRES_DB: logsense, POSTGRES_USER: logsense, POSTGRES_PASSWORD: ${DB_PASSWORD:-logsense_dev}}
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U logsense -d logsense"], interval: 5s, timeout: 3s, retries: 20}
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: ["redisdata:/data"]
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 5s, timeout: 3s, retries: 20}
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-ai"]
+    ports: ["11434:11434"]
+    volumes: ["ollamadata:/root/.ollama"]
+volumes: {pgdata: {}, redisdata: {}, ollamadata: {}}

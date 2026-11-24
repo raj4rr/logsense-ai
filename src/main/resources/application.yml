@@ -1,0 +1,48 @@
+server:
+  port: 8080
+spring:
+  application.name: logsense-ai
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/logsense}
+    username: ${DB_USER:logsense}
+    password: ${DB_PASSWORD:logsense_dev}
+  jpa:
+    hibernate.ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  data.redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+  ai:
+    mcp.server:
+      name: logsense-ai
+      version: 0.1.0
+      protocol: STREAMABLE
+      type: SYNC
+      annotation-scanner.enabled: true
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat.options.model: ${OPENAI_MODEL:gpt-4.1-mini}
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat.options.model: ${OLLAMA_MODEL:qwen3:8b}
+management:
+  endpoints.web.exposure.include: health,info,metrics,prometheus
+  endpoint.health.probes.enabled: true
+logsense:
+  ai.provider: ${AI_PROVIDER:ollama}
+  security.api-key: ${LOGSENSE_API_KEY:change-me-local}
+  security.allow-local-no-key: ${ALLOW_LOCAL_NO_KEY:false}
+  files.allowed-roots: ${LOGSENSE_ALLOWED_ROOTS:./sample-logs}
+  limits.max-results: 500
+  limits.max-window-hours: 168
+  sources:
+    docker.enabled: ${DOCKER_ENABLED:false}
+    kubernetes.enabled: ${KUBERNETES_ENABLED:false}
+    elasticsearch.url: ${ELASTICSEARCH_URL:}
+    loki.url: ${LOKI_URL:}
+    splunk.url: ${SPLUNK_URL:}
+    cloudwatch.region: ${AWS_REGION:}
+    kafka.bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:}
+    postgres.url: ${SOURCE_POSTGRES_URL:}
